@@ -1,0 +1,71 @@
+name: Build Starfold for Apple TV
+
+'on':
+  push:
+    paths:
+      - '.github/workflows/build-starfold-tvos.yml'
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  build:
+    runs-on: xcode-27
+    timeout-minutes: 30
+    steps:
+      - name: Check Metal toolchain
+        shell: bash
+        run: |
+          if ! xcrun --sdk appletvos metal --version; then
+            xcodebuild -downloadComponent MetalToolchain
+          fi
+      - name: Build and verify unsigned IPA
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild -version
+          xcrun --sdk appletvos --show-sdk-version
+          revision=cbc7e96d414173735f9e1f46ef88d07a8edbbfae
+          git init --quiet source
+          git -C source fetch --quiet --depth=1 https://github.com/JarvanSun/Starfold.git "$revision"
+          git -C source checkout --quiet --detach FETCH_HEAD
+          xcodebuild -project source/Starfold.xcodeproj \
+            -scheme StarfoldTV -configuration Release -sdk appletvos \
+            -destination 'generic/platform=tvOS' \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            -archivePath "$RUNNER_TEMP/Starfold.xcarchive" \
+            -onlyUsePackageVersionsFromResolvedFile \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO archive
+          app="$RUNNER_TEMP/Starfold.xcarchive/Products/Applications/Starfold.app"
+          extension="$app/PlugIns/StarfoldTopShelf.appex"
+          framework="$app/Frameworks/LiveKitWebRTC.framework"
+          plist_value() {
+            /usr/libexec/PlistBuddy -c "Print :$2" "$1/Info.plist"
+          }
+          [[ $(plist_value "$app" CFBundleSupportedPlatforms:0) == AppleTVOS ]]
+          [[ $(plist_value "$app" MinimumOSVersion) == 26.0 ]]
+          [[ $(plist_value "$app" CFBundleShortVersionString) == 1.1 ]]
+          [[ $(plist_value "$extension" NSExtension:NSExtensionPointIdentifier) == com.apple.tv-top-shelf ]]
+          [[ $(plist_value "$app" StarfoldAppGroup) == "$(plist_value "$extension" StarfoldAppGroup)" ]]
+          [[ -s "$app/Assets.car" ]]
+          [[ -z $(find "$app" -name embedded.mobileprovision -print -quit) ]]
+          for bundle in "$app" "$extension" "$framework"; do
+            binary="$bundle/$(plist_value "$bundle" CFBundleExecutable)"
+            xcrun lipo "$binary" -verify_arch arm64
+            xcrun vtool -show-build "$binary" | grep -E '[[:space:]]platform[[:space:]]+TVOS[[:space:]]*$'
+          done
+          mkdir Payload
+          ditto "$app" Payload/Starfold.app
+          cp source/LICENSE source/THIRD_PARTY_NOTICES.md Payload/Starfold.app/
+          ipa=Starfold-1.1-tvos-arm64-unsigned.ipa
+          ditto -c -k --keepParent Payload "$ipa"
+          unzip -tq "$ipa"
+          shasum -a 256 "$ipa"
+      - name: Upload unsigned IPA
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: Starfold-1.1-tvos-arm64-unsigned
+          path: Starfold-1.1-tvos-arm64-unsigned.ipa
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 3
