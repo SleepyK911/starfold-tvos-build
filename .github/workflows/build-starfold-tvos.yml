@@ -25,7 +25,7 @@ jobs:
           set -euo pipefail
           xcodebuild -version
           xcrun --sdk appletvos --show-sdk-version
-          revision=cbc7e96d414173735f9e1f46ef88d07a8edbbfae
+          revision=6843ae10343be082dd174d724b3e7a8fff2513e5
           git init --quiet source
           git -C source fetch --quiet --depth=1 https://github.com/JarvanSun/Starfold.git "$revision"
           git -C source checkout --quiet --detach FETCH_HEAD
