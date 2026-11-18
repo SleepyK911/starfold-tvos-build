@@ -1,0 +1,81 @@
+name: Build Starfold tvOS HDR preview
+
+'on':
+  push:
+    paths:
+      - '.github/workflows/build-starfold-tvos-hdr.yml'
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  build:
+    runs-on: xcode-27
+    timeout-minutes: 30
+    steps:
+      - name: Check Metal toolchain
+        shell: bash
+        run: |
+          if ! xcrun --sdk appletvos metal --version; then
+            xcodebuild -downloadComponent MetalToolchain
+          fi
+      - name: Build and verify unsigned IPA
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild -version
+          xcrun --sdk appletvos --show-sdk-version
+          revision=6843ae10343be082dd174d724b3e7a8fff2513e5
+          git init --quiet source
+          git -C source fetch --quiet --depth=1 https://github.com/JarvanSun/Starfold.git "$revision"
+          git -C source checkout --quiet --detach FETCH_HEAD
+          curl -fsSL https://raw.githubusercontent.com/SleepyK911/starfold-tvos-build/8c9c56c5795b827813f3892fc70aedcf4b3c28ec/starfold-tv-hdr.patch.gz.b64 | base64 -D | gzip -dc > starfold.patch
+          echo '2bc7c0515792ce5ca16c302e65228f695cbdf506f46e082595a2d5d2a45c8548  starfold.patch' | shasum -a 256 -c -
+          git -C source apply --check ../starfold.patch
+          git -C source apply ../starfold.patch
+          xcodebuild -project source/Starfold.xcodeproj \
+            -scheme StarfoldTV -configuration Release -sdk appletvos \
+            -destination 'generic/platform=tvOS' \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            -archivePath "$RUNNER_TEMP/Starfold.xcarchive" \
+            -onlyUsePackageVersionsFromResolvedFile \
+            CURRENT_PROJECT_VERSION=2 CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO archive
+          app="$RUNNER_TEMP/Starfold.xcarchive/Products/Applications/Starfold.app"
+          extension="$app/PlugIns/StarfoldTopShelf.appex"
+          framework="$app/Frameworks/LiveKitWebRTC.framework"
+          plist_value() {
+            /usr/libexec/PlistBuddy -c "Print :$2" "$1/Info.plist"
+          }
+          [[ $(plist_value "$app" CFBundleSupportedPlatforms:0) == AppleTVOS ]]
+          [[ $(plist_value "$app" MinimumOSVersion) == 26.0 ]]
+          [[ $(plist_value "$app" CFBundleShortVersionString) == 1.1 ]]
+          [[ $(plist_value "$app" CFBundleVersion) == 2 ]]
+          [[ $(plist_value "$extension" CFBundleVersion) == 2 ]]
+          [[ $(plist_value "$extension" NSExtension:NSExtensionPointIdentifier) == com.apple.tv-top-shelf ]]
+          [[ $(plist_value "$app" StarfoldAppGroup) == "$(plist_value "$extension" StarfoldAppGroup)" ]]
+          [[ -s "$app/Assets.car" ]]
+          [[ -s "$app/StreamKit_StreamKit.bundle/default.metallib" ]]
+          [[ -z $(find "$app" -name embedded.mobileprovision -print -quit) ]]
+          for bundle in "$app" "$extension" "$framework"; do
+            binary="$bundle/$(plist_value "$bundle" CFBundleExecutable)"
+            xcrun lipo "$binary" -verify_arch arm64
+            xcrun vtool -show-build "$binary" | grep -E '[[:space:]]platform[[:space:]]+TVOS[[:space:]]*$'
+          done
+          mkdir Payload
+          ditto "$app" Payload/Starfold.app
+          cp source/LICENSE source/THIRD_PARTY_NOTICES.md Payload/Starfold.app/
+          ipa=Starfold-1.1-6843ae1-TV-HDR-tvos-arm64-unsigned.ipa
+          ditto -c -k --norsrc --keepParent Payload "$ipa"
+          unzip -tq "$ipa"
+          shasum -a 256 "$ipa"
+      - name: Upload unsigned IPA
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: Starfold-1.1-6843ae1-TV-HDR-tvos-arm64-unsigned
+          path: Starfold-1.1-6843ae1-TV-HDR-tvos-arm64-unsigned.ipa
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 3
+      - name: Test StreamKit on macOS
+        shell: bash
+        run: bash source/scripts/test.sh StreamKit
