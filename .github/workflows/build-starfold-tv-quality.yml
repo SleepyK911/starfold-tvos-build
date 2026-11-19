@@ -1,0 +1,159 @@
+name: Build Starfold Apple TV streaming quality
+
+'on':
+  push:
+    paths:
+      - '.github/workflows/build-starfold-tv-quality.yml'
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  build:
+    runs-on: xcode-27
+    timeout-minutes: 30
+    steps:
+      - name: Build and verify the unsigned tvOS IPA
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild -version
+          if ! xcrun --sdk appletvos metal --version; then
+            xcodebuild -downloadComponent MetalToolchain
+          fi
+          revision=6843ae10343be082dd174d724b3e7a8fff2513e5
+          git init --quiet source
+          git -C source fetch --quiet --depth=1 https://github.com/JarvanSun/Starfold.git "$revision"
+          git -C source checkout --quiet --detach FETCH_HEAD
+          base64 -D <<'QUALITY_PATCH' | gzip -dc > quality.patch
+          H4sIAAAAAAAA/807aY8bR3bf51e8pQ2DBDk9POZshBmNddgTWSvFM5IDDAZGsbtI1qrZTXcX55BW
+          gOxdrIxNVs4Gzh5ZA5sAQWBkg3WOPRQvpB8Ta2bkfxG8quruqj7IuQRsf5ghq+u9evXu96rosn4f
+          5ucHjANZuEOc+2RAo4UtTsJ+4LlbQxJSd2ErmIROfvgGJXwS4jjlnPmD9MM9RvdvBS71rGif9Tn0
+          XhvqOea79ADa/bbbWmpaVov2WnSJQKvZXF5cnJufn3+N+5qr1+uvc29XrsB8p9NYhnqn02i14MoV
+          GE96HnOgz3zigeORKIIcNDycg/iJKIeHMA5pn4bUd2hkOV4wcf96QjzGD6ELPt2/R7wJhUcS6NEc
+          zNXxg1ppj4QQ0o8mNOLR1cCPAo+2FhebYxveDgJcSkzGZ5BbqggOHqUQ0ekgDCIF8KO5uqRWI9Kh
+          njfxSKi2ZoP6cHUYMIfqPMkTmoGNeVHCwMxkgzz3UuyJh5SMFoQw1ZdYyBc3qFm4Y4ta7jRdsmRZ
+          K6u91dXFxUuyqJmrX9CkZuJHm2o10aZazcYKmhQbjYOQg5x9k/E5iHg4ceKRGN6G6x9NCCc9L1Em
+          j3JwhHpltC19PSIHbzMeEk5v9caRDZs+lyqML8vtag4kClTsFMXNGMW6rs6I6T7zgh7j0R0a3qID
+          0mMcuiixptzvKnqPemut0VrEHZ92f+gLxAfmM17lJBxQbiuwbfGtoVuGDXfSLzV4ODcfkyiZBN10
+          RJjWPuPOECRefboAIREFy5GcsU0DlIOK44Vg6OPsUrdngugOKUNRvZiadByfEp81y62ZSGIOFWNb
+          B6vPDqhbtYZsMKQRr8FUltSL2HEqqvvEi2gJaaXsTKZrftNU/Ay0+TJRtst1n/LfJaYiU9Aqp7m4
+          1qS95Y5ltRY7Hbq6fKlOs3jhS/GXxajRdbSX0EvW8d9qWf5hAuuuyVQE6b6i2B+bLxom1ICM6HuB
+          Q7K2T/t96nC2R9/BCcQfTMiAZmAdj1Gfb4zHm37EiedtXsu6guz7hukReDBxhlfJmPSYxzhDzxaJ
+          TV6jY+q71HcYjSwx645HeD8IR+uWo803DejC6BqzTVfja6Flv/UWfBTnK12I3UjKt1rs6oUb5CTk
+          1N3AIGL5wb5MRFfajVWod1Y6jVb7bKowDtke4RT6E98BP+D0fRoF3oSzwK9+CCF1KNujrg1X39li
+          D+g6ho5UESYkdFW0lPMa4lu8G+pFFB5CSPkk9EXESkTJonSd94J9GlIXurDhkjEqkHJeSViT/2um
+          JlgsUpBvH74bRLyaEpuSoxiOg4qqWiow1o/ZGQfa9ZIstws8nNBGkZz0UFS+s5gia0jZYMjhLwAx
+          a95ZMes0uGZxyUBxOZzSCpC81ow9clj9EKT523CP9UKCFF8XA6gxFwkdWzTcYziuJTDnjRfluFSQ
+          WHPo0mLbtaxWc5WsNVsXChJTVjtXZJiCT2SSSyJzXmqslXgADSy2YlGcGfnJlNrMZWgn8BBc2icT
+          j0dWRHnVBLciHoRkQEXN1YB+ENpJbqam1FJtEvp1+iq2mIAi2MzKYqyWVqjp3rVU6ew714CL961N
+          0HYty5xVIa1WSxY6pxMXPuhg+8ThQXgYey3owg1zpFrTq2Svb8WEQzfZQzrDlA8GFlFU6Fuyta3z
+          kPmDaqFoNZdRksQmaHpB4FULpKSRZXZDzkCUzncdYbY7YOYmJchMoJo1IuOqoSkFhNVqqrhbEVJe
+          O7WUY8dK/clIe3eTHorijvmDWBdE+eCRiG84TjDx+eY1bbyo5tBfyCpHm6+XDNqwuXftTZogljp3
+          VbJr3iweuRMGPHACb+Fq4PMw8G7RKCIDWuTVz4lEufPVlkvWeh3LImSJLtJOqTs/7zI5P35eREJb
+          WtIlyGxeaIA5V2sDNGCL+q7eEBBiIRM+DEL2QMTf96UFaq8xcx8T9+qQ+APqVgWTRNOiASzacF0M
+          /uh0axrMfXrYD8mIxthSXdpjLg1SHa3uM5cPFTqZ5ogvNQ0kSTK0LNOYqvVWvhcFvg3XCCdZ9xf0
+          vicyjR1pETZs+Ie70JVFkWBiu9NoLZ+Hi/qzUxlJiIoNFZN1lUYysolMrNggmNmAyj6RnMQh+Wk3
+          UwKJuj/DVnvG8oLXN00YSQbrh+l3WzYJdjNdArFiVlzISSEymbRLMdQyrQhBSH4IH528eybuSqME
+          hB+OzzQ/TNSkYsNORZBbsWOyK5Lmiq2I3y1D47IR9SMW+NGF0IzIwY07WxUblpsFUwqZXqTwM7it
+          83US0VS6KYq7Y5dwitJPGbThMYLbkzahrKqW0T2tCaSqsioPD9fhr7Zuf3eLhox4yndYLuGkus/4
+          EF/dVgYnDa8BwRjnRDbsWFGA9dNNehjt6qEWn/V1Yb3V2jlCxBaNUF4LWK6gzfnUK8z6z4NBBQeH
+          LLrt1qplubTtOKu9cwSHKWucITJMwSLCQluEhbbM61V/WJ+Lvsssy0RrWmqRmmTDLeN7fv6QRFhv
+          cOq+S3w3GpL71Ow56pNZpHzq7TH102nmRNEKGLrYN4AuxOGhvbTcTOMDJiKJ1xd5VKJbkkG35dfG
+          jP0k+WHN6FCI3FdhhG6stzJQNBtrMlAszeTraMIJ5tWy3g3G1Kdu9UPwSA8pQSVXMO/hSA3m/xJ2
+          NEwbDi67axAmu9kCg9GNF15D7VXYF/Xdqrl3axgLqFprAAbJGKC2m8XkSDElmDLJRyYKWRhzFUoF
+          mUfJ/PGEN8ByhgRjsOb2TOKzjTHhbs6+oXrxhkzs2olNKubSbluRqr/1FnzH0OpsJ8ZUeGwH5UmI
+          2WlDTvqooOeUQCEj492umzmfXCyq1qAOOzHuXahDn4URx8bsmLjpJFublOW0IediYWrRResQoXUt
+          t7E1vaLqnqnGhU+x8xFM1pqGyOJIepNYxKpVZfnBCIsq9DUpqQXzS45wYjdlT0VsyNoJ/D4bTGSr
+          C7oZ/yScESPeVX1W1YyPIiH7QHpFJNOS+UjBpHeVtxSzpOtsCDZjw3cZ6qvtRqc9hdH6MyIH26Kd
+          HTCfR+mGc53wdcucivG8aXalDckYemgXOsAu7GR6uEUmUVTEFNmFloMJgRB/UzKdPaAKJXThO1NF
+          //3vm6ZtojQogW7xEqUWaDpHxCdM6hblBLOrchYZ8oodpgSyqO8ELnWrnI1oxMlobEPyMXaeYpma
+          pkiaDxftI80XlFNRLwMpZ0Spk9mNcwPNe5jMrZvMgbppYNh1gYeKGW82M1FCPyfGx3R36b0UIz0R
+          sbxEdKUBPFlGS7EwDzZVWDCwUI81hWD96V4pcxawsADbQwrv01HAKdzxyCFySDA+pgNISIF4UQBu
+          4ExG1OfUBebDOyGlvifOHe68D2+0Vpbalok8xmCRMR57VXPFokrelJ9UnirJ4uJhVXTUZiCf1gUo
+          R/Uop0EJYlM5inyFfjsprwXFejtbCQpNNePNinsuTa3jIpLnWrGHM/ET3w8mviMOWMfENS08tfES
+          AzuTQWVtaMr5DxGMwXYp0D3q4zUUGu7RcBMN+jqOCF7mU6Lyg6HZxZJRHZyvMixAoUrDVnOpt9xf
+          sazF5bWl5eXyK4vnW+QctWERGuPQR+8vG3eIFIydtLoa+ctE6MwiPvGl3NCfyS7Crn5Skj+4v3s3
+          bjrjjIKj9O1cTnGaI59EyeRuRFmXarpKzOL6UDsfwANZmRa1RfbZ7hj3Is7MlexdB9V/70KF+vN3
+          tyqa+RUyD4NABd/Y+MfyrEEQDDxqOcHIbq11mm1s4CTvW0UTdrU1yiSgXZA4lQjwUiTzUid2BiAt
+          45pyYhe3A8S8fDmenKHHosy8N++eYGZtDMgLD83GEtQ72Bm5oIDFkpr4oKsLMzMvLwLMhXKDGagc
+          g7G0yY7pN2+9ftll28LLarOvaMXeZBth0+/qa0H7SbyZ5lXPgyk5lFki7tKaZZF2q7m86s50ruda
+          q9THngubKGnFWd7ySqOzWlJqCQhdud6gB2Pq8KqMkJHFouujMV6sSKKpkPoVBKyScCByNvQg8raJ
+          7OWrFEiEWv34TmWUHxDGoxtBqNKODT8tofFsPi5sohsYzdXxDvBhGOxH2XzWiUvGrrGtqpnOJQ06
+          2XBL/HF8IaZR6qmwu1PsN3C/WqpXy5Rhzn0/2PeoO6DIINEZOATq71EvGNMqHirYUEm2veHcr2Qw
+          qFVVbldY85gASUfqdCCsDzleZxP4WBliLluqj5jmqN3uBdp0maQ7uwF0VPHC8aWfaoaxZhLYSAtL
+          G5q5LpTOUOjm1pt1tek10xczO6I+F4cQzLdza2ZYmJrn9K2WCtCoVTLNiaQfgaprUGXiz9KEtw3k
+          sYuGPlElOcvCG5TsoNqpYeowJg6/JZL7N5vpYdIukGg9TmEeCVUzt1kpKlcxQ8md1c08lkoR75YT
+          vdPa3dHP9ySByZHups93BZXJaZ08OEgP69B1TMPfNvDL4zGDC90uVBBJ1lmkp4VKXG+giFhIT6VN
+          cQll4d2MDGYkLXVgCVr8ImVcTdeu7VTUdIPqWmF7U8Mg6FOQ1oT3V/UaOjEL9oDuVOTF25C6ogmp
+          ltlE+rqC27MBZWPShJRHOnmxXMi6M7aZ/MhIhE75UQTIGPkHQ+qjw77GIifwferwaHtI/eu+G8nQ
+          X9WCYGIDCwvwDtujvplIxdfwtu8V/D7sajAaBz6G7QVVisSvtvAydOAnWdRloFEplEvW2ssrS5bl
+          uMvOWrttplCXspDMny4FVfwzlzbUW6uNdkvLnorh8A4p3S+6khFRL57yZnypOr0ab956yjRP0p9L
+          aBfdU9iP9BtdWt6PTw0ewjY94NhbUmtsM+7l+474WC6LsMhwq/lFipKfmh4q8NkOBgOPVivJpfH4
+          KEItHWMR0BXsI90uZkfxatqpCz5yw+8x/37mdAKfAhrwopjFcfd6/XtK+Wi3zF6TdHCFVDYmY/Wt
+          1mdvtSdrzmSz9bNt1vwdTQH4lO2qpePt1gu3mwcTlFaDvlrXhjebteTeKT6PYEiJS0M7a1sCYZ4F
+          cnZFu9fxCPpBwCWGMieJCYHsY4nOCXuA5mAdOPJaZWS6lRmTlcPr9JfcRadpWf3mSmtthZY6vFno
+          cm5tFoCo/NbEZV3818ZjttypZ3r8qeQ8S5sA+afEWvHUwiKLMF4BtpoyI4hc0HbXZzz3TrzFJAxs
+          qPCQ+JFHxEWxzKQ9vKYqJt0iB2w0GYFSmoo+UXNv8c4E9IPh/LskR+tlU3b8xeNvf/OLk3/++OTp
+          k1Ky4o9xf1/5lemeS9AWL+gEI0w/xJLpDy7HzLlPQ7zIDXyoLsiqnwbFfavUARaJUBzPyvbsSqd1
+          fsUp9Pp/Rvqj6gCR9o0Fv7Qjqj8jbXr57E/HX3z98tl/H//+41df/fH4vz6RJF+CZikJnVu3JPzZ
+          tauz2mh1oL6y0sT/unolYocp7ITTsHO+hJ0bEx6MCGcOePjTokjsJC23YH9IfTHmU74fhPfxyPj/
+          Hv8S78jQMUzGFsgTsQjIeOwdAg/U7AOuGGEZkjEWnwmqtFE/LHXFD/oiCCRZf9MLDoD4LjAegcsi
+          /BFT+js9cdSKnRgaIuEwwbvVcqf6JoMQYr9e0dmph1wt0TE1/bWJ5uT5T0/+9MWrP/765bOfvHz2
+          4+Of/+HVk38/+vGX3/7yJy+fPz369EevXnx58vTJN48/Of7V744//9+jL758+exvj//jX6RxHP/8
+          Dyef//r4Hz/95vEn5SKYCWrY2w+eH/39v7168eLo0/9Uojn67GdHP/qfl18/lZI4+oe/kwDHv3hx
+          8q9fv/rti5Pnv/3m8SdHn/3028cfn/zmq6PPvnr1g+ffPnly8vmXx7/63cvnT0/+6YfJXo4//ZmM
+          E4LmEkmkLvf/AbSJob5aRQAA
+          QUALITY_PATCH
+          echo 'ff4de32c667d7232ac185a8f1a05781df07d13124c7cee6389f92f158cafa272  quality.patch' | shasum -a 256 -c -
+          git -C source apply --check ../quality.patch
+          git -C source apply ../quality.patch
+          git -C source diff --exit-code -- StarfoldTV/Platform Packages/StreamKit/Sources/StreamKit/Rendering
+          xcodebuild -project source/Starfold.xcodeproj \
+            -scheme StarfoldTV -configuration Release -sdk appletvos \
+            -destination 'generic/platform=tvOS' \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            -archivePath "$RUNNER_TEMP/Starfold.xcarchive" \
+            -onlyUsePackageVersionsFromResolvedFile \
+            CURRENT_PROJECT_VERSION=5 CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO archive
+          app="$RUNNER_TEMP/Starfold.xcarchive/Products/Applications/Starfold.app"
+          extension="$app/PlugIns/StarfoldTopShelf.appex"
+          framework="$app/Frameworks/LiveKitWebRTC.framework"
+          plist_value() {
+            /usr/libexec/PlistBuddy -c "Print :$2" "$1/Info.plist"
+          }
+          [[ $(plist_value "$app" CFBundleSupportedPlatforms:0) == AppleTVOS ]]
+          [[ $(plist_value "$app" MinimumOSVersion) == 26.0 ]]
+          [[ $(plist_value "$app" CFBundleShortVersionString) == 1.1 ]]
+          [[ $(plist_value "$app" CFBundleVersion) == 5 ]]
+          [[ $(plist_value "$extension" CFBundleVersion) == 5 ]]
+          [[ $(plist_value "$extension" NSExtension:NSExtensionPointIdentifier) == com.apple.tv-top-shelf ]]
+          [[ $(plist_value "$app" StarfoldAppGroup) == "$(plist_value "$extension" StarfoldAppGroup)" ]]
+          [[ -s "$app/Assets.car" ]]
+          [[ -s "$app/StreamKit_StreamKit.bundle/default.metallib" ]]
+          [[ -z $(find "$app" -name embedded.mobileprovision -print -quit) ]]
+          for bundle in "$app" "$extension" "$framework"; do
+            binary="$bundle/$(plist_value "$bundle" CFBundleExecutable)"
+            xcrun lipo "$binary" -verify_arch arm64
+            xcrun vtool -show-build "$binary" | grep -E '[[:space:]]platform[[:space:]]+TVOS[[:space:]]*$'
+          done
+          mkdir Payload
+          ditto "$app" Payload/Starfold.app
+          cp source/LICENSE source/THIRD_PARTY_NOTICES.md Payload/Starfold.app/
+          ipa=Starfold-1.1-6843ae1-TV-Quality-tvos-arm64-unsigned.ipa
+          ditto -c -k --norsrc --keepParent Payload "$ipa"
+          unzip -tq "$ipa"
+          shasum -a 256 "$ipa"
+      - name: Upload unsigned IPA
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: Starfold-1.1-6843ae1-TV-Quality-tvos-arm64-unsigned
+          path: Starfold-1.1-6843ae1-TV-Quality-tvos-arm64-unsigned.ipa
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 3
+      - name: Test StreamKit and shared settings
+        shell: bash
+        run: |
+          bash source/scripts/test.sh StreamKit
+          bash source/scripts/test.sh StarfoldShared
