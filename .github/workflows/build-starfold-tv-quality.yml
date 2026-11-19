@@ -126,6 +126,18 @@ jobs:
           +import XboxKit
            
            @testable import StreamKit
+          --- a/StarfoldTV/Resources/Localizable.xcstrings
+          +++ b/StarfoldTV/Resources/Localizable.xcstrings
+          @@ -701,3 +701,4 @@
+               "settings.quality.bitrate.title" : {
+          +      "comment" : "Settings: picker for maximum streaming bitrate",
+                 "localizations" : {
+                   "en" : {
+          @@ -734,3 +735,4 @@
+               "settings.quality.console.request1440p" : {
+          +      "comment" : "Settings: whether to request 1440p from the Xbox console for Remote Play",
+                 "localizations" : {
+                   "en" : {
           XBOXKIT_IMPORTS
           git -C source diff --exit-code -- StarfoldTV/Platform Packages/StreamKit/Sources/StreamKit/Rendering
           xcodebuild -project source/Starfold.xcodeproj \
