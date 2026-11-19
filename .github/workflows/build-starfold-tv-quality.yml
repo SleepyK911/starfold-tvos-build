@@ -108,6 +108,25 @@ jobs:
           echo 'ff4de32c667d7232ac185a8f1a05781df07d13124c7cee6389f92f158cafa272  quality.patch' | shasum -a 256 -c -
           git -C source apply --check ../quality.patch
           git -C source apply ../quality.patch
+          git -C source apply <<'XBOXKIT_IMPORTS'
+          --- a/Packages/StarfoldShared/Sources/StarfoldShared/Features/Stream/Model/StreamSettings.swift
+          +++ b/Packages/StarfoldShared/Sources/StarfoldShared/Features/Stream/Model/StreamSettings.swift
+          @@ -7,4 +7,5 @@
+           
+           import StreamKit
+          +import XboxKit
+           
+           struct StreamSettings: Equatable {
+          --- a/Packages/StreamKit/Tests/StreamKitTests/Session/HostChannelsTests.swift
+          +++ b/Packages/StreamKit/Tests/StreamKitTests/Session/HostChannelsTests.swift
+          @@ -7,5 +7,6 @@
+           
+           import Foundation
+           import Testing
+          +import XboxKit
+           
+           @testable import StreamKit
+          XBOXKIT_IMPORTS
           git -C source diff --exit-code -- StarfoldTV/Platform Packages/StreamKit/Sources/StreamKit/Rendering
           xcodebuild -project source/Starfold.xcodeproj \
             -scheme StarfoldTV -configuration Release -sdk appletvos \
