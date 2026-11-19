@@ -1,0 +1,70 @@
+name: Build Starfold for iPhone and iPad
+
+'on':
+  push:
+    paths:
+      - '.github/workflows/build-starfold-ios.yml'
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  build:
+    runs-on: xcode-27
+    timeout-minutes: 30
+    steps:
+      - name: Archive and verify unsigned iOS IPA
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+          if ! xcrun --sdk iphoneos metal --version; then
+            xcodebuild -downloadComponent MetalToolchain
+          fi
+          revision=6843ae10343be082dd174d724b3e7a8fff2513e5
+          git init --quiet source
+          git -C source fetch --quiet --depth=1 https://github.com/JarvanSun/Starfold.git "$revision"
+          git -C source checkout --quiet --detach FETCH_HEAD
+          [[ $(git -C source rev-parse HEAD) == "$revision" ]]
+          xcodebuild -project source/Starfold.xcodeproj \
+            -scheme StarfoldiOS -configuration Release -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            -archivePath "$RUNNER_TEMP/Starfold-iOS.xcarchive" \
+            -onlyUsePackageVersionsFromResolvedFile \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO archive
+          app="$RUNNER_TEMP/Starfold-iOS.xcarchive/Products/Applications/Starfold.app"
+          framework="$app/Frameworks/LiveKitWebRTC.framework"
+          plist_value() {
+            /usr/libexec/PlistBuddy -c "Print :$2" "$1/Info.plist"
+          }
+          [[ $(plist_value "$app" CFBundleSupportedPlatforms:0) == iPhoneOS ]]
+          [[ $(plist_value "$app" MinimumOSVersion) == 26.0 ]]
+          [[ $(plist_value "$app" CFBundleShortVersionString) == 1.1 ]]
+          [[ $(plist_value "$app" UIDeviceFamily:0) == 1 ]]
+          [[ $(plist_value "$app" UIDeviceFamily:1) == 2 ]]
+          [[ -z $(find "$app" \( -name embedded.mobileprovision -o -name '*.appex' \) -print -quit) ]]
+          [[ -s "$app/Assets.car" ]]
+          [[ -s "$app/StreamKit_StreamKit.bundle/default.metallib" ]]
+          [[ -s "$app/StarfoldShared_StarfoldShared.bundle/StandardTouchLayout.json" ]]
+          for bundle in "$app" "$framework"; do
+            binary="$bundle/$(plist_value "$bundle" CFBundleExecutable)"
+            xcrun lipo "$binary" -verify_arch arm64
+            xcrun vtool -show-build "$binary" | grep -E '[[:space:]]platform[[:space:]]+IOS[[:space:]]*$'
+          done
+          mkdir Payload
+          ditto "$app" Payload/Starfold.app
+          cp source/LICENSE source/THIRD_PARTY_NOTICES.md Payload/Starfold.app/
+          ipa=Starfold-1.1-6843ae1-ios-arm64-unsigned.ipa
+          ditto -c -k --norsrc --keepParent Payload "$ipa"
+          unzip -tq "$ipa"
+          shasum -a 256 "$ipa"
+      - name: Upload unsigned IPA
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: Starfold-1.1-6843ae1-ios-arm64-unsigned
+          path: Starfold-1.1-6843ae1-ios-arm64-unsigned.ipa
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 3
